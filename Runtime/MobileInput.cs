@@ -47,7 +47,11 @@ namespace Mopsicus.Plugins {
         /// </summary>
         /// <param name="data">Data</param>
         protected void Execute (JsonObject data) {
-            MobileInput.Execute (_id, data);
+            try
+            {
+                MobileInput.Execute(_id, data);
+            }
+            catch (Exception) { }
         }
 
         /// <summary>
