@@ -204,7 +204,6 @@ namespace Mopsicus.Plugins
                 throw new MissingComponentException();
             }
             _inputObjectText = _inputObject.textComponent;
-            Debug.LogFormat("Streaming Assets: {0}", Application.streamingAssetsPath);
         }
 
         /// <summary>
@@ -213,7 +212,10 @@ namespace Mopsicus.Plugins
         protected override void Start()
         {
             base.Start();
-            StartCoroutine(InitialzieOnNextFrame());
+
+#if (UNITY_ANDROID) && !UNITY_EDITOR
+            StartCoroutine(InitializeOnNextFrame());
+#endif
         }
 
         /// <summary>
@@ -223,7 +225,7 @@ namespace Mopsicus.Plugins
         {
             if (_isMobileInputCreated)
             {
-                SetVisible(true);
+                SetVisible(true, true);
             }
         }
 
@@ -235,7 +237,7 @@ namespace Mopsicus.Plugins
             if (_isMobileInputCreated)
             {
                 SetFocus(false);
-                SetVisible(false);
+                SetVisible(false, true);
             }
         }
 
@@ -295,11 +297,6 @@ namespace Mopsicus.Plugins
             }
             set
             {
-                if (_isMobileInputCreated)
-                {
-                    return;
-                }
-
                 InputField.text = value;
                 SetTextNative(value);
             }
@@ -308,7 +305,7 @@ namespace Mopsicus.Plugins
         /// <summary>
         /// Initialization coroutine
         /// </summary>
-        private IEnumerator InitialzieOnNextFrame()
+        private IEnumerator InitializeOnNextFrame()
         {
             yield return null;
             PrepareNativeEdit();
@@ -583,14 +580,14 @@ namespace Mopsicus.Plugins
         void Ready()
         {
             _isMobileInputCreated = true;
-            if (!_isVisibleOnCreate)
-            {
-                SetVisible(false);
-            }
+            SetVisible(_isVisibleOnCreate);
+
             if (_isFocusOnCreate)
             {
                 SetFocus(true);
             }
+
+            Text = Text;
         }
 
         /// <summary>
@@ -599,6 +596,11 @@ namespace Mopsicus.Plugins
         /// <param name="text">New text</param>
         void SetTextNative(string text)
         {
+            if (!_isMobileInputCreated)
+            {
+                return;
+            }
+
             JsonObject data = new JsonObject();
             data["msg"] = SET_TEXT;
             data["text"] = text;
@@ -610,6 +612,11 @@ namespace Mopsicus.Plugins
         /// </summary>
         private void RemoveNative()
         {
+            if (!_isMobileInputCreated)
+            {
+                return;
+            }
+
             JsonObject data = new JsonObject();
             data["msg"] = REMOVE;
             Execute(data);
@@ -621,6 +628,11 @@ namespace Mopsicus.Plugins
         /// <param name="inputRect">RectTransform</param>
         public void SetRectNative(RectTransform inputRect)
         {
+            if (!_isMobileInputCreated)
+            {
+                return;
+            }
+
             Rect rect = GetScreenRectFromRectTransform(inputRect);
             if (_lastRect == rect)
             {
@@ -700,19 +712,23 @@ namespace Mopsicus.Plugins
         /// Set field visible
         /// </summary>
         /// <param name="isVisible">true | false</param>
-        public void SetVisible(bool isVisible)
+        public void SetVisible(bool isVisible, bool sendVisible = false)
         {
             if (!_isMobileInputCreated)
             {
                 _isVisibleOnCreate = isVisible;
                 return;
             }
-            /*JsonObject data = new JsonObject
+
+            if (sendVisible)
             {
-                ["msg"] = SET_VISIBLE,
-                ["is_visible"] = isVisible
-            };
-            Execute(data);*/
+                JsonObject data = new JsonObject
+                {
+                    ["msg"] = SET_VISIBLE,
+                    ["is_visible"] = isVisible
+                };
+                Execute(data);
+            }
 
             bool wasVisible = Visible;
 
