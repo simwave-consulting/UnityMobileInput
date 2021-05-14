@@ -225,7 +225,7 @@ namespace Mopsicus.Plugins
         {
             if (_isMobileInputCreated)
             {
-                SetVisible(true, true);
+                SetVisible(true);
             }
         }
 
@@ -237,7 +237,7 @@ namespace Mopsicus.Plugins
             if (_isMobileInputCreated)
             {
                 SetFocus(false);
-                SetVisible(false, true);
+                SetVisible(false);
             }
         }
 
@@ -712,7 +712,7 @@ namespace Mopsicus.Plugins
         /// Set field visible
         /// </summary>
         /// <param name="isVisible">true | false</param>
-        public void SetVisible(bool isVisible, bool sendVisible = false)
+        public void SetVisible(bool isVisible)
         {
             if (!_isMobileInputCreated)
             {
@@ -720,15 +720,12 @@ namespace Mopsicus.Plugins
                 return;
             }
 
-            if (sendVisible)
+            /*JsonObject data = new JsonObject
             {
-                JsonObject data = new JsonObject
-                {
-                    ["msg"] = SET_VISIBLE,
-                    ["is_visible"] = isVisible
-                };
-                Execute(data);
-            }
+                ["msg"] = SET_VISIBLE,
+                ["is_visible"] = isVisible
+            };
+            Execute(data);*/
 
             bool wasVisible = Visible;
 
