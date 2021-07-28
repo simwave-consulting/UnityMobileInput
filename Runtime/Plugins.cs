@@ -8,18 +8,18 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using NiceJson;
-#if UNITY_IOS
+#if UNITY_IOS && !UNITY_EDITOR
 using System.Runtime.InteropServices;
 #endif
 
-namespace Mopsicus.Plugins {
-
+namespace Mopsicus.Plugins
+{
     /// <summary>
     /// Mobile plugin interface
     /// Each plugin must implement it
     /// </summary>
-    public interface IPlugin {
-
+    public interface IPlugin
+    {
         /// <summary>
         /// Plaugin name
         /// </summary>
@@ -28,31 +28,35 @@ namespace Mopsicus.Plugins {
         /// <summary>
         /// Callback on get data
         /// </summary>
-        void OnData (JsonObject data);
+        void OnData(JsonObject data);
 
         /// <summary>
         /// Callback on get error
         /// </summary>
-        void OnError (JsonObject data);
+        void OnError(JsonObject data);
     }
 
     /// <summary>
     /// Plugin service to manager all mobile plugins
     /// </summary>
-	public class Plugins : MonoBehaviour {
-
+	public class Plugins : MonoBehaviour
+    {
 #if UNITY_ANDROID
         /// <summary>
         /// Mask for Java classes
         /// </summary>
         public const string ANDROID_CLASS_MASK = "ru.mopsicus.{0}.Plugin";
 #elif UNITY_IOS
+#if !UNITY_EDITOR
         /// <summary>
         /// Init iOS plugins
         /// </summary>
         [DllImport ("__Internal")]
         private static extern void pluginsInit (string data);
-#endif		
+#else
+        private static void pluginsInit(string data) { }
+#endif
+#endif
 
         /// <summary>
         /// Gameobject name on scene to receive data
@@ -71,62 +75,73 @@ namespace Mopsicus.Plugins {
         /// </summary>
         private Dictionary<string, IPlugin> _plugins;
 
-		private void Awake () {
-			name = _dataObject;
-			DontDestroyOnLoad (gameObject);
-			InitPlugins ();
-		}
+        private void Awake()
+        {
+            name = _dataObject;
+            DontDestroyOnLoad(gameObject);
+            InitPlugins();
+        }
 
-		private void OnDestroy () {
-			_plugins = null;
-		}
+        private void OnDestroy()
+        {
+            _plugins = null;
+        }
 
-		/// <summary>
+        /// <summary>
         /// Init all plugins in app
         /// </summary>
-        void InitPlugins () {
-            gameObject.AddComponent<MobileInput> ();
+        void InitPlugins()
+        {
+            gameObject.AddComponent<MobileInput>();
             //
             // other plugins
             //			
-            IPlugin[] plugins = GetComponents<IPlugin> ();
-            _plugins = new Dictionary<string, IPlugin> (plugins.Length);
-            foreach (var item in plugins) {
-                _plugins.Add (item.Name, item);
+            IPlugin[] plugins = GetComponents<IPlugin>();
+            _plugins = new Dictionary<string, IPlugin>(plugins.Length);
+            foreach (var item in plugins)
+            {
+                _plugins.Add(item.Name, item);
             }
-            JsonObject data = new JsonObject ();
+            JsonObject data = new JsonObject();
             data["object"] = _dataObject;
             data["receiver"] = _dataReceiver;
 #if UNITY_IOS
-            pluginsInit (data.ToJsonString ());
+            pluginsInit(data.ToJsonString());
 #endif
-            Debug.Log ("Plugins init");
+            Debug.Log("Plugins init");
         }
 
         /// <summary>
         /// Handler to process data to plugin
         /// </summary>
         /// <param name="data">data from plugin</param>
-        void OnDataReceive (string data) {
-            Debug.Log ("Plugins receive data: " + data);
-            try {
-                JsonObject info = (JsonObject) JsonNode.ParseJsonString (data);
-                if (_plugins.ContainsKey (info["name"])) {
+        void OnDataReceive(string data)
+        {
+            Debug.Log("Plugins receive data: " + data);
+            try
+            {
+                JsonObject info = (JsonObject)JsonNode.ParseJsonString(data);
+                if (_plugins.ContainsKey(info["name"]))
+                {
                     IPlugin plugin = _plugins[info["name"]];
-                    if (info.ContainsKey ("error")) {
-                        plugin.OnError (info);
-                    } else {
-                        plugin.OnData (info);
+                    if (info.ContainsKey("error"))
+                    {
+                        plugin.OnError(info);
                     }
-                } else {
-                    Debug.LogError (string.Format ("{0} plugin does not exists", info["name"]));
+                    else
+                    {
+                        plugin.OnData(info);
+                    }
                 }
-            } catch (Exception e) {
-                Debug.LogError (string.Format ("Plugins receive error: {0}, stack: {1}", e.Message, e.StackTrace));
+                else
+                {
+                    Debug.LogError(string.Format("{0} plugin does not exists", info["name"]));
+                }
             }
-
+            catch (Exception e)
+            {
+                Debug.LogError(string.Format("Plugins receive error: {0}, stack: {1}", e.Message, e.StackTrace));
+            }
         }
-
-	}
-
+    }
 }
